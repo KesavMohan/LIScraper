@@ -14,7 +14,7 @@ def test_connection():
     # Configuration
     api_key = 'pat4Bm2KpOoZoxZJL.937f55e41e029315ed0540e91c00770e3f9c6cdc00e7a5d7d3e6a01bb7806fe3'
     base_id = 'appCv9G4AvrS18inO'
-    table_name = 'LinkedIn Scraper'
+    table_name = 'LinkedIn Profiles'
     
     print(f"📊 Base ID: {base_id}")
     print(f"📋 Table: {table_name}")
@@ -67,7 +67,7 @@ def test_connection():
         else:
             print("❌ Connection failed")
             print("\n💡 Common issues:")
-            print("  1. Table 'LinkedIn Scraper' doesn't exist")
+            print("  1. Table 'LinkedIn Profiles' doesn't exist")
             print("  2. API token lacks permissions for this base")
             print("  3. Column names don't match exactly")
             
@@ -75,10 +75,22 @@ def test_connection():
         print(f"❌ Error: {e}")
         
         print("\n🔧 Setup checklist:")
-        print("  □ Created table named 'LinkedIn Scraper'")
+        print("  □ Created table named 'LinkedIn Profiles'")
         print("  □ Added all required columns with exact names")
         print("  □ API token has access to base appCv9G4AvrS18inO")
         print("  □ Token has data.records:read and data.records:write scopes")
+        print("\n📋 Required field names (case-sensitive):")
+        print("  - Name")
+        print("  - Profile Photo")
+        print("  - Current Job Title")
+        print("  - Current Company")
+        print("  - Location")
+        print("  - Skills")
+        print("  - LinkedIn URL")
+        print("  - Connections Count")
+        print("  - Undergraduate University")
+        print("  - Graduate Schools")
+        print("  - Scraped Date")
 
 if __name__ == "__main__":
     test_connection()

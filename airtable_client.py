@@ -10,7 +10,7 @@ class AirtableClient:
         Args:
             api_key (str): Your Airtable API key (starts with 'pat')
             base_id (str): Your Airtable base ID (starts with 'app')
-            table_name (str): Name of your table (e.g., 'LinkedIn Scraper')
+            table_name (str): Name of your table (e.g., 'LinkedIn Profiles')
         """
         self.api_key = api_key
         self.base_id = base_id
@@ -61,16 +61,14 @@ class AirtableClient:
                 "records": [
                     {
                         "fields": {
-                            "Name": person_data.get('name', ''),
+                            "Full Name": person_data.get('name', ''),
                             "Profile Photo": person_data.get('profile_photo', ''),
                             "Current Job Title": person_data.get('current_job_title', ''),
                             "Current Company": person_data.get('current_company', ''),
                             "Location": person_data.get('location', ''),
                             "Skills": skills_str,
                             "LinkedIn URL": person_data.get('linkedin_url', ''),
-                            "Connections Count": person_data.get('connections_count', ''),
-                            "Undergraduate University": person_data.get('undergraduate_university', ''),
-                            "Graduate Schools": grad_schools_str,
+                            "Number of Connections": person_data.get('connections_count', ''),
                             "Scraped Date": datetime.now().isoformat()
                         }
                     }
@@ -136,16 +134,14 @@ class AirtableClient:
                     
                     records.append({
                         "fields": {
-                            "Name": person_data.get('name', ''),
+                            "Full Name": person_data.get('name', ''),
                             "Profile Photo": person_data.get('profile_photo', ''),
                             "Current Job Title": person_data.get('current_job_title', ''),
                             "Current Company": person_data.get('current_company', ''),
                             "Location": person_data.get('location', ''),
                             "Skills": skills_str,
                             "LinkedIn URL": person_data.get('linkedin_url', ''),
-                            "Connections Count": person_data.get('connections_count', ''),
-                            "Undergraduate University": person_data.get('undergraduate_university', ''),
-                            "Graduate Schools": grad_schools_str,
+                            "Number of Connections": person_data.get('connections_count', ''),
                             "Scraped Date": datetime.now().isoformat()
                         }
                     })

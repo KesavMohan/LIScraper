@@ -49,14 +49,14 @@ def test_airtable_integration(person_data):
     
     api_key = os.getenv('AIRTABLE_API_KEY')
     base_id = os.getenv('AIRTABLE_BASE_ID')
-    table_name = os.getenv('AIRTABLE_TABLE_NAME', 'LinkedIn Scraper')
+    table_name = os.getenv('AIRTABLE_TABLE_NAME', 'LinkedIn Profiles')
     
     if not api_key or not base_id:
         print("⚠️ Airtable credentials not found in environment variables")
         print("To test Airtable integration, create a .env file with:")
         print("AIRTABLE_API_KEY=your_api_key_here")
         print("AIRTABLE_BASE_ID=your_base_id_here")
-        print("AIRTABLE_TABLE_NAME=LinkedIn Scraper")
+        print("AIRTABLE_TABLE_NAME=LinkedIn Profiles")
         return False
     
     try:

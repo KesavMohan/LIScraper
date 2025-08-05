@@ -128,7 +128,7 @@ def main():
     airtable_config = None
     api_key = os.getenv('AIRTABLE_API_KEY')
     base_id = os.getenv('AIRTABLE_BASE_ID')
-    table_name = os.getenv('AIRTABLE_TABLE_NAME', 'LinkedIn Scraper')
+    table_name = os.getenv('AIRTABLE_TABLE_NAME', 'LinkedIn Profiles')
     
     if api_key and base_id:
         airtable_config = {
