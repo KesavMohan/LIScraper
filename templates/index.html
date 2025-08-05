@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Job Scraper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0077b5 0%, #005885 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .scraper-section {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .url-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .url-input:focus {
+            outline: none;
+            border-color: #0077b5;
+        }
+        
+        .scrape-btn {
+            background: linear-gradient(135deg, #0077b5 0%, #005885 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .scrape-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,119,181,0.3);
+        }
+        
+        .scrape-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .jobs-section {
+            padding: 30px;
+        }
+        
+        .jobs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .jobs-count {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-export {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-export:hover {
+            background: #218838;
+        }
+        
+        .btn-clear {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-clear:hover {
+            background: #c82333;
+        }
+        
+        .btn-refresh {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-refresh:hover {
+            background: #138496;
+        }
+        
+        .jobs-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .jobs-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .jobs-table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+        
+        .jobs-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .job-title {
+            font-weight: 600;
+            color: #0077b5;
+        }
+        
+        .job-title a {
+            color: #0077b5;
+            text-decoration: none;
+        }
+        
+        .job-title a:hover {
+            text-decoration: underline;
+        }
+        
+        .company-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .job-location {
+            color: #666;
+        }
+        
+        .job-type {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #495057;
+        }
+        
+        .posted-date {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .no-jobs {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0077b5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0077b5, #005885);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: 200px 0; }
+        }
+        
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .jobs-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            .action-buttons {
+                justify-content: center;
+            }
+            
+            .jobs-table {
+                font-size: 14px;
+            }
+            
+            .jobs-table th,
+            .jobs-table td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 LinkedIn Job Scraper</h1>
+            <p>Extract job postings from LinkedIn company pages</p>
+        </div>
+        
+        <div class="scraper-section">
+            <div class="input-group">
+                <input type="url" 
+                       id="companyUrl" 
+                       class="url-input" 
+                       placeholder="Enter LinkedIn company URL (e.g., https://www.linkedin.com/company/example-company/)"
+                       value="">
+                <button id="scrapeBtn" class="scrape-btn" onclick="startScraping()">
+                    Scrape Jobs
+                </button>
+            </div>
+            
+            <div id="status" class="status"></div>
+        </div>
+        
+        <div class="jobs-section">
+            <div class="jobs-header">
+                <div class="jobs-count">
+                    Total Jobs: <strong id="jobCount">{{ total_jobs }}</strong>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-refresh" onclick="refreshJobs()">🔄 Refresh</button>
+                    <a href="/export" class="btn btn-export">📊 Export CSV</a>
+                    <button class="btn btn-clear" onclick="clearJobs()">🗑️ Clear All</button>
+                </div>
+            </div>
+            
+            {% if jobs %}
+            <table class="jobs-table">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Job Title</th>
+                        <th>Location</th>
+                        <th>Type</th>
+                        <th>Posted Date</th>
+                        <th>Scraped Date</th>
+                    </tr>
+                </thead>
+                <tbody id="jobsTable">
+                    {% for job in jobs %}
+                    <tr>
+                        <td class="company-name">{{ job.company_name }}</td>
+                        <td class="job-title">
+                            {% if job.job_url %}
+                                <a href="{{ job.job_url }}" target="_blank">{{ job.job_title }}</a>
+                            {% else %}
+                                {{ job.job_title }}
+                            {% endif %}
+                        </td>
+                        <td class="job-location">{{ job.job_location or 'Not specified' }}</td>
+                        <td>
+                            {% if job.job_type %}
+                                <span class="job-type">{{ job.job_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="posted-date">{{ job.posted_date or 'Not specified' }}</td>
+                        <td class="posted-date">{{ job.scraped_date or 'Not specified' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-jobs">
+                <p>No jobs found. Enter a LinkedIn company URL above to start scraping!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        let isScrapingInProgress = false;
+        
+        function startScraping() {
+            const urlInput = document.getElementById('companyUrl');
+            const scrapeBtn = document.getElementById('scrapeBtn');
+            const status = document.getElementById('status');
+            
+            const companyUrl = urlInput.value.trim();
+            
+            if (!companyUrl) {
+                showStatus('Please enter a LinkedIn company URL', 'error');
+                return;
+            }
+            
+            if (!companyUrl.includes('linkedin.com/company')) {
+                showStatus('Please enter a valid LinkedIn company URL', 'error');
+                return;
+            }
+            
+            if (isScrapingInProgress) {
+                showStatus('Scraping already in progress...', 'info');
+                return;
+            }
+            
+            isScrapingInProgress = true;
+            scrapeBtn.disabled = true;
+            scrapeBtn.innerHTML = '<span class="loading-spinner"></span>Scraping...';
+            
+            showStatus('Starting scraping process...', 'info');
+            
+            fetch('/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ company_url: companyUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                    resetScrapeButton();
+                } else {
+                    showStatus('Scraping started successfully!', 'success');
+                    checkStatus();
+                }
+            })
+            .catch(error => {
+                showStatus('Error starting scraper: ' + error.message, 'error');
+                resetScrapeButton();
+            });
+        }
+        
+        function checkStatus() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_scraping) {
+                    showStatus(data.progress, 'info');
+                    setTimeout(checkStatus, 2000);
+                } else {
+                    if (data.error) {
+                        showStatus(data.error, 'error');
+                    } else {
+                        showStatus(data.progress, 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    }
+                    resetScrapeButton();
+                }
+            })
+            .catch(error => {
+                showStatus('Error checking status: ' + error.message, 'error');
+                resetScrapeButton();
+            });
+        }
+        
+        function resetScrapeButton() {
+            const scrapeBtn = document.getElementById('scrapeBtn');
+            isScrapingInProgress = false;
+            scrapeBtn.disabled = false;
+            scrapeBtn.innerHTML = 'Scrape Jobs';
+        }
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+        
+        function refreshJobs() {
+            location.reload();
+        }
+        
+        function clearJobs() {
+            if (confirm('Are you sure you want to delete all jobs? This action cannot be undone.')) {
+                fetch('/clear')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showStatus(data.error, 'error');
+                    } else {
+                        showStatus(data.message, 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    }
+                })
+                .catch(error => {
+                    showStatus('Error clearing jobs: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        // Auto-focus on URL input
+        document.getElementById('companyUrl').focus();
+        
+        // Allow Enter key to start scraping
+        document.getElementById('companyUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startScraping();
+            }
+        });
+    </script>
+</body>
+</html>
