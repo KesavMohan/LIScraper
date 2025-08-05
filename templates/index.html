@@ -249,6 +249,93 @@
             font-size: 1.1rem;
         }
         
+        /* Table filtering and sorting styles */
+        .table-controls {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #0077b5;
+        }
+        
+        .clear-filters {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .clear-filters:hover {
+            background: #5a6268;
+        }
+        
+        .sortable {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+        
+        .sortable:hover {
+            background: #e9ecef;
+        }
+        
+        .sortable::after {
+            content: '↕️';
+            position: absolute;
+            right: 8px;
+            opacity: 0.5;
+        }
+        
+        .sortable.sort-asc::after {
+            content: '⬆️';
+            opacity: 1;
+        }
+        
+        .sortable.sort-desc::after {
+            content: '⬇️';
+            opacity: 1;
+        }
+        
+        .table-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .highlight {
+            background-color: #fff3cd !important;
+        }
+        
+        mark {
+            background-color: #ffeb3b;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+        
         .loading-spinner {
             display: inline-block;
             width: 20px;
@@ -310,6 +397,25 @@
             .jobs-table td {
                 padding: 10px;
             }
+            
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-controls {
+                padding: 15px;
+            }
+            
+            .table-info {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .sortable::after {
+                position: static;
+                margin-left: 5px;
+            }
         }
     </style>
 </head>
@@ -348,18 +454,35 @@
             </div>
             
             {% if jobs %}
-            <table class="jobs-table">
+            <div class="table-controls">
+                <div class="filter-row">
+                    <input type="text" id="filterCompany" class="filter-input" placeholder="Filter by Company...">
+                    <input type="text" id="filterTitle" class="filter-input" placeholder="Filter by Job Title...">
+                    <input type="text" id="filterLocation" class="filter-input" placeholder="Filter by Location...">
+                    <input type="text" id="filterType" class="filter-input" placeholder="Filter by Type...">
+                    <input type="text" id="filterPosted" class="filter-input" placeholder="Filter by Posted Date...">
+                    <input type="text" id="filterScraped" class="filter-input" placeholder="Filter by Scraped Date...">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button class="clear-filters" onclick="clearAllFilters()">Clear All Filters</button>
+                    <div class="table-info">
+                        <span id="tableInfo">Showing <span id="visibleCount">{{ jobs|length }}</span> of <span id="totalCount">{{ jobs|length }}</span> jobs</span>
+                    </div>
+                </div>
+            </div>
+            
+            <table class="jobs-table" id="jobsTable">
                 <thead>
                     <tr>
-                        <th>Company</th>
-                        <th>Job Title</th>
-                        <th>Location</th>
-                        <th>Type</th>
-                        <th>Posted Date</th>
-                        <th>Scraped Date</th>
+                        <th class="sortable" data-column="0" onclick="sortTable(0)">Company</th>
+                        <th class="sortable" data-column="1" onclick="sortTable(1)">Job Title</th>
+                        <th class="sortable" data-column="2" onclick="sortTable(2)">Location</th>
+                        <th class="sortable" data-column="3" onclick="sortTable(3)">Type</th>
+                        <th class="sortable" data-column="4" onclick="sortTable(4)">Posted Date</th>
+                        <th class="sortable" data-column="5" onclick="sortTable(5)">Scraped Date</th>
                     </tr>
                 </thead>
-                <tbody id="jobsTable">
+                <tbody id="jobsTableBody">
                     {% for job in jobs %}
                     <tr>
                         <td class="company-name">{{ job.company_name }}</td>
@@ -516,6 +639,203 @@
                 startScraping();
             }
         });
+        
+        // Table sorting and filtering functionality
+        let currentSort = { column: -1, direction: 'asc' };
+        let allRows = [];
+        
+        // Initialize table functionality when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTable();
+            setupFilters();
+        });
+        
+        function initializeTable() {
+            const table = document.getElementById('jobsTable');
+            if (!table) return;
+            
+            const tbody = document.getElementById('jobsTableBody');
+            allRows = Array.from(tbody.querySelectorAll('tr')).map(row => {
+                return {
+                    element: row,
+                    data: Array.from(row.children).map(cell => cell.textContent.trim())
+                };
+            });
+            
+            updateTableInfo();
+        }
+        
+        function setupFilters() {
+            const filterInputs = document.querySelectorAll('.filter-input');
+            filterInputs.forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    filterTable();
+                });
+            });
+        }
+        
+        function sortTable(columnIndex) {
+            const headers = document.querySelectorAll('.sortable');
+            
+            // Update sort direction
+            if (currentSort.column === columnIndex) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = columnIndex;
+                currentSort.direction = 'asc';
+            }
+            
+            // Update header classes
+            headers.forEach((header, index) => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                if (index === columnIndex) {
+                    header.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+            
+            // Sort the rows
+            const visibleRows = allRows.filter(row => !row.element.style.display || row.element.style.display !== 'none');
+            
+            visibleRows.sort((a, b) => {
+                let aVal = a.data[columnIndex];
+                let bVal = b.data[columnIndex];
+                
+                // Special handling for dates
+                if (columnIndex >= 4) { // Posted Date or Scraped Date columns
+                    aVal = parseDateForSorting(aVal);
+                    bVal = parseDateForSorting(bVal);
+                }
+                
+                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            // Reorder the table
+            const tbody = document.getElementById('jobsTableBody');
+            visibleRows.forEach(row => {
+                tbody.appendChild(row.element);
+            });
+        }
+        
+        function parseDateForSorting(dateStr) {
+            // Handle relative dates like "1 week ago", "2 days ago"
+            if (dateStr.includes('ago')) {
+                const now = new Date();
+                if (dateStr.includes('minute')) {
+                    const minutes = parseInt(dateStr);
+                    return new Date(now.getTime() - (minutes * 60 * 1000));
+                } else if (dateStr.includes('hour')) {
+                    const hours = parseInt(dateStr);
+                    return new Date(now.getTime() - (hours * 60 * 60 * 1000));
+                } else if (dateStr.includes('day')) {
+                    const days = parseInt(dateStr);
+                    return new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+                } else if (dateStr.includes('week')) {
+                    const weeks = parseInt(dateStr);
+                    return new Date(now.getTime() - (weeks * 7 * 24 * 60 * 60 * 1000));
+                }
+            }
+            
+            // Try to parse as regular date
+            const date = new Date(dateStr);
+            return isNaN(date.getTime()) ? new Date(0) : date;
+        }
+        
+        function filterTable() {
+            const filters = [
+                document.getElementById('filterCompany').value.toLowerCase(),
+                document.getElementById('filterTitle').value.toLowerCase(),
+                document.getElementById('filterLocation').value.toLowerCase(),
+                document.getElementById('filterType').value.toLowerCase(),
+                document.getElementById('filterPosted').value.toLowerCase(),
+                document.getElementById('filterScraped').value.toLowerCase()
+            ];
+            
+            let visibleCount = 0;
+            
+            allRows.forEach(row => {
+                let isVisible = true;
+                
+                filters.forEach((filter, index) => {
+                    if (filter && !row.data[index].toLowerCase().includes(filter)) {
+                        isVisible = false;
+                    }
+                });
+                
+                if (isVisible) {
+                    row.element.style.display = '';
+                    visibleCount++;
+                    
+                    // Highlight matching text
+                    filters.forEach((filter, index) => {
+                        if (filter) {
+                            highlightText(row.element.children[index], filter);
+                        } else {
+                            removeHighlight(row.element.children[index]);
+                        }
+                    });
+                } else {
+                    row.element.style.display = 'none';
+                }
+            });
+            
+            updateTableInfo(visibleCount);
+        }
+        
+        function highlightText(element, searchTerm) {
+            const text = element.textContent;
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            
+            // Only highlight if there's a match
+            if (regex.test(text)) {
+                const highlightedText = text.replace(regex, '<mark>$1</mark>');
+                
+                // Preserve the original HTML structure for links
+                if (element.querySelector('a')) {
+                    const link = element.querySelector('a');
+                    link.innerHTML = link.textContent.replace(regex, '<mark>$1</mark>');
+                } else {
+                    element.innerHTML = highlightedText;
+                }
+            }
+        }
+        
+        function removeHighlight(element) {
+            if (element.querySelector('a')) {
+                const link = element.querySelector('a');
+                link.innerHTML = link.textContent;
+            } else {
+                element.innerHTML = element.textContent;
+            }
+        }
+        
+        function clearAllFilters() {
+            document.querySelectorAll('.filter-input').forEach(input => {
+                input.value = '';
+            });
+            
+            // Remove all highlights and show all rows
+            allRows.forEach(row => {
+                row.element.style.display = '';
+                Array.from(row.element.children).forEach(cell => {
+                    removeHighlight(cell);
+                });
+            });
+            
+            updateTableInfo();
+        }
+        
+        function updateTableInfo(visibleCount = null) {
+            const totalCount = allRows.length;
+            const visible = visibleCount !== null ? visibleCount : totalCount;
+            
+            document.getElementById('visibleCount').textContent = visible;
+            document.getElementById('totalCount').textContent = totalCount;
+            
+            // Update the main job count as well
+            document.getElementById('jobCount').textContent = totalCount;
+        }
     </script>
 </body>
 </html>
