@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Jobs Scraper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0077b5;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .stats {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .filters {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .filter-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .filter-group input:focus {
+            outline: none;
+            border-color: #0077b5;
+            box-shadow: 0 0 5px rgba(0,119,181,0.3);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #0077b5;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        th:hover {
+            background-color: #005885;
+        }
+        th.sortable::after {
+            content: ' ↕';
+            font-size: 12px;
+        }
+        th.sorted-asc::after {
+            content: ' ↑';
+            font-size: 12px;
+        }
+        th.sorted-desc::after {
+            content: ' ↓';
+            font-size: 12px;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .remote-yes {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .remote-no {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .remote-unknown {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .job-url {
+            color: #0077b5;
+            text-decoration: none;
+        }
+        .job-url:hover {
+            text-decoration: underline;
+        }
+        .description-cell {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .description-cell:hover {
+            white-space: normal;
+            overflow: visible;
+            position: relative;
+            z-index: 5;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            font-weight: bold;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        @media (max-width: 768px) {
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+            table {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 8px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LinkedIn Jobs Scraper</h1>
+        
+        <div class="stats">
+            <strong>Total Jobs: {{ jobs|length }}</strong>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="companyFilter">Company:</label>
+                    <input type="text" id="companyFilter" placeholder="Filter by company...">
+                </div>
+                <div class="filter-group">
+                    <label for="titleFilter">Job Title:</label>
+                    <input type="text" id="titleFilter" placeholder="Filter by job title...">
+                </div>
+                <div class="filter-group">
+                    <label for="locationFilter">Location:</label>
+                    <input type="text" id="locationFilter" placeholder="Filter by location...">
+                </div>
+                <div class="filter-group">
+                    <label for="remoteFilter">Remote:</label>
+                    <input type="text" id="remoteFilter" placeholder="Yes/No/Unknown...">
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="salaryFilter">Salary Range:</label>
+                    <input type="text" id="salaryFilter" placeholder="Filter by salary...">
+                </div>
+                <div class="filter-group">
+                    <label for="typeFilter">Job Type:</label>
+                    <input type="text" id="typeFilter" placeholder="Filter by job type...">
+                </div>
+                <div class="filter-group">
+                    <label for="dateFilter">Posted Date:</label>
+                    <input type="text" id="dateFilter" placeholder="Filter by date...">
+                </div>
+                <div class="filter-group">
+                    <label for="experienceFilter">Experience Level:</label>
+                    <input type="text" id="experienceFilter" placeholder="Filter by experience...">
+                </div>
+            </div>
+        </div>
+        
+        <table id="jobsTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-column="0" onclick="sortTable(0)">Company</th>
+                    <th class="sortable" data-column="1" onclick="sortTable(1)">Job Title</th>
+                    <th class="sortable" data-column="2" onclick="sortTable(2)">Location</th>
+                    <th class="sortable" data-column="3" onclick="sortTable(3)">Type</th>
+                    <th class="sortable" data-column="4" onclick="sortTable(4)">Salary Range</th>
+                    <th class="sortable" data-column="5" onclick="sortTable(5)">Remote</th>
+                    <th class="sortable" data-column="6" onclick="sortTable(6)">Posted Date</th>
+                    <th class="sortable" data-column="7" onclick="sortTable(7)">Scraped Date</th>
+                    <th>Description</th>
+                    <th>Experience Level</th>
+                    <th>Department</th>
+                    <th>Job URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>{{ job[1] }}</td>
+                    <td>{{ job[2] }}</td>
+                    <td>{{ job[3] }}</td>
+                    <td>{{ job[4] }}</td>
+                    <td>{{ job[9] }}</td>
+                    <td class="remote-{{ job[12].lower() if job[12] else 'unknown' }}">{{ job[12] or 'Unknown' }}</td>
+                    <td>{{ job[7] }}</td>
+                    <td>{{ job[8] }}</td>
+                    <td class="description-cell" title="{{ job[5] }}">{{ job[5][:100] + '...' if job[5] and job[5]|length > 100 else job[5] or 'N/A' }}</td>
+                    <td>{{ job[10] or 'N/A' }}</td>
+                    <td>{{ job[11] or 'N/A' }}</td>
+                    <td><a href="{{ job[6] }}" target="_blank" class="job-url">View Job</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div id="noResults" class="no-results" style="display: none;">
+            No jobs match the current filters.
+        </div>
+    </div>
+
+    <script>
+        let currentSortColumn = -1;
+        let currentSortDirection = 'asc';
+        
+        // Filter functionality
+        const filterInputs = [
+            'companyFilter', 'titleFilter', 'locationFilter', 'remoteFilter',
+            'salaryFilter', 'typeFilter', 'dateFilter', 'experienceFilter'
+        ];
+        
+        filterInputs.forEach(filterId => {
+            document.getElementById(filterId).addEventListener('input', filterTable);
+        });
+        
+        function filterTable() {
+            const table = document.getElementById('jobsTable');
+            const tbody = table.querySelector('tbody');
+            const rows = tbody.querySelectorAll('tr');
+            const filters = {
+                company: document.getElementById('companyFilter').value.toLowerCase(),
+                title: document.getElementById('titleFilter').value.toLowerCase(),
+                location: document.getElementById('locationFilter').value.toLowerCase(),
+                remote: document.getElementById('remoteFilter').value.toLowerCase(),
+                salary: document.getElementById('salaryFilter').value.toLowerCase(),
+                type: document.getElementById('typeFilter').value.toLowerCase(),
+                date: document.getElementById('dateFilter').value.toLowerCase(),
+                experience: document.getElementById('experienceFilter').value.toLowerCase()
+            };
+            
+            let visibleRows = 0;
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let shouldShow = true;
+                
+                // Check each filter
+                if (filters.company && !cells[0].textContent.toLowerCase().includes(filters.company)) shouldShow = false;
+                if (filters.title && !cells[1].textContent.toLowerCase().includes(filters.title)) shouldShow = false;
+                if (filters.location && !cells[2].textContent.toLowerCase().includes(filters.location)) shouldShow = false;
+                if (filters.remote && !cells[5].textContent.toLowerCase().includes(filters.remote)) shouldShow = false;
+                if (filters.salary && !cells[4].textContent.toLowerCase().includes(filters.salary)) shouldShow = false;
+                if (filters.type && !cells[3].textContent.toLowerCase().includes(filters.type)) shouldShow = false;
+                if (filters.date && !cells[6].textContent.toLowerCase().includes(filters.date)) shouldShow = false;
+                if (filters.experience && !cells[9].textContent.toLowerCase().includes(filters.experience)) shouldShow = false;
+                
+                if (shouldShow) {
+                    row.style.display = '';
+                    visibleRows++;
+                    
+                    // Highlight matching text
+                    highlightText(row, filters);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show/hide no results message
+            const noResults = document.getElementById('noResults');
+            if (visibleRows === 0) {
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
+            }
+        }
+        
+        function highlightText(row, filters) {
+            const cells = row.querySelectorAll('td');
+            
+            // Remove existing highlights
+            cells.forEach(cell => {
+                cell.innerHTML = cell.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/g, '$1');
+            });
+            
+            // Add new highlights
+            Object.values(filters).forEach(filter => {
+                if (filter) {
+                    cells.forEach(cell => {
+                        const text = cell.textContent;
+                        const regex = new RegExp(`(${filter})`, 'gi');
+                        cell.innerHTML = text.replace(regex, '<span class="highlight">$1</span>');
+                    });
+                }
+            });
+        }
+        
+        // Sort functionality
+        function sortTable(columnIndex) {
+            const table = document.getElementById('jobsTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Update sort indicators
+            const headers = table.querySelectorAll('th');
+            headers.forEach(header => {
+                header.classList.remove('sorted-asc', 'sorted-desc');
+            });
+            
+            if (currentSortColumn === columnIndex) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = columnIndex;
+                currentSortDirection = 'asc';
+            }
+            
+            headers[columnIndex].classList.add(currentSortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex].textContent.trim();
+                const bValue = b.cells[columnIndex].textContent.trim();
+                
+                // Handle date sorting
+                if (columnIndex === 6 || columnIndex === 7) { // Posted Date or Scraped Date
+                    const aDate = new Date(aValue);
+                    const bDate = new Date(bValue);
+                    return currentSortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+                }
+                
+                // Handle remote status sorting
+                if (columnIndex === 5) { // Remote column
+                    const aRemote = aValue.toLowerCase();
+                    const bRemote = bValue.toLowerCase();
+                    const remoteOrder = { 'yes': 1, 'no': 2, 'unknown': 3 };
+                    const aOrder = remoteOrder[aRemote] || 3;
+                    const bOrder = remoteOrder[bRemote] || 3;
+                    return currentSortDirection === 'asc' ? aOrder - bOrder : bOrder - aOrder;
+                }
+                
+                // Default string comparison
+                return currentSortDirection === 'asc' 
+                    ? aValue.localeCompare(bValue) 
+                    : bValue.localeCompare(aValue);
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+        }
+        
+        // Initialize table
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-filter on page load if any filters are set
+            const hasFilters = filterInputs.some(id => document.getElementById(id).value);
+            if (hasFilters) {
+                filterTable();
+            }
+        });
+    </script>
+</body>
+</html>
